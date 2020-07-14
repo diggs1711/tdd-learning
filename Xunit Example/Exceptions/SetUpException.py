@@ -1,0 +1,2 @@
+class SetUpException(Exception):
+    pass
