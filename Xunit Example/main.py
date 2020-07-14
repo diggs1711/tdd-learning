@@ -8,15 +8,13 @@ class TestCase:
 
         try:
             self.setUp()
-        except:
-            result.testSetUpFailed()
-            return
-
-        try:
             method = getattr(self, self.name)
             method()
+        except SetUpException:
+            result.testSetUpFailed()
         except:
             result.testFailed()
+
         self.tearDown()
 
     def tearDown(self):
@@ -25,6 +23,9 @@ class TestCase:
     def setUp(self):
         pass
 
+class SetUpException(Exception):
+    pass
+
 class WasRunFailedSetUp(TestCase):
     def __init__(self, name):
         TestCase.__init__(self, name)
@@ -32,12 +33,10 @@ class WasRunFailedSetUp(TestCase):
     def setUp(self):
         self.wasRun = None
         self.log = "setUp "
-        raise Exception
+        raise SetUpException
 
     def testFailedSetup(self):
-        print("run")
-        self.wasRun = 1
-        self.log = self.log + "testFailedSetUp "
+        pass
 
 class WasRun(TestCase):
     def __init__(self, name):
