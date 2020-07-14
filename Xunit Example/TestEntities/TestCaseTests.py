@@ -1,11 +1,9 @@
 from WasRun.WasRun import WasRun
 from WasRun.WasRunFailedSetUp import WasRunFailedSetUp
 from TestEntities.TestResult import TestResult
-from TestEntities.TestSuite import TestSuite
 from TestEntities.TestCase import TestCase
 
 class TestCaseTest(TestCase):
-
     def setUp(self):
         self.result = TestResult()
 
@@ -38,10 +36,3 @@ class TestCaseTest(TestCase):
         test = WasRunFailedSetUp('testFailedSetup')
         test.run(self.result)
         assert ("1 run, 1 failed, 1 failed in setUp" == self.result.summary())
-
-    def testSuite(self):
-        suite = TestSuite()
-        suite.add(WasRun("testMethod"))
-        suite.add(WasRun("testBrokenMethod"))
-        suite.run(self.result)
-        assert("2 run, 1 failed" == self.result.summary())
