@@ -1,10 +1,17 @@
 class TestCase:
     def __init__(self, name):
         self.name = name
+        self.log = ""
 
     def run(self, result):
         result.testStarted()
-        self.setUp()
+
+        try:
+            self.setUp()
+        except:
+            result.testSetUpFailed()
+            return
+
         try:
             method = getattr(self, self.name)
             method()
@@ -17,6 +24,20 @@ class TestCase:
 
     def setUp(self):
         pass
+
+class WasRunFailedSetUp(TestCase):
+    def __init__(self, name):
+        TestCase.__init__(self, name)
+
+    def setUp(self):
+        self.wasRun = None
+        self.log = "setUp "
+        raise Exception
+
+    def testFailedSetup(self):
+        print("run")
+        self.wasRun = 1
+        self.log = self.log + "testFailedSetUp "
 
 class WasRun(TestCase):
     def __init__(self, name):
@@ -31,6 +52,7 @@ class WasRun(TestCase):
         self.log = self.log + "testMethod "
 
     def testBrokenMethod(self):
+        self.log = self.log + "testBrokenMethod "
         raise Exception
 
     def tearDown(self):
@@ -61,10 +83,15 @@ class TestCaseTest(TestCase):
         self.result.testFailed()
         assert ("1 run, 1 failed" == self.result.summary())
 
+    def testInvokeTearDownAfterTestFail(self):
+        test = WasRun("testBrokenMethod")
+        test.run(self.result)
+        assert("setUp testBrokenMethod tearDown " == test.log)
+
     def testFailedInSetup(self):
-        self.result.testStarted()
-        self.setUpFailed()
-        assert ("1 run, 1 failed" == self.result.summary())
+        test = WasRunFailedSetUp('testFailedSetup')
+        test.run(self.result)
+        assert ("1 run, 1 failed, 1 failed in setUp" == self.result.summary())
 
     def testSuite(self):
         suite = TestSuite()
@@ -89,15 +116,23 @@ class TestResult:
     def __init__(self):
         self.runCount = 0
         self.errorCount = 0
+        self.setUpErrors = 0
 
     def testFailed(self):
         self.errorCount = self.errorCount + 1
+
+    def testSetUpFailed(self):
+        self.setUpErrors = self.setUpErrors + 1
+        self.testFailed()
 
     def testStarted(self):
         self.runCount = self.runCount + 1
 
     def summary(self):
-        return "{} run, {} failed".format(self.runCount, self.errorCount)
+        errorReport = "{} run, {} failed".format(self.runCount, self.errorCount)
+        if self.setUpErrors > 0:
+            return errorReport + ", {} failed in setUp".format(self.setUpErrors)
+        return errorReport
 
 suite = TestSuite()
 suite.add(TestCaseTest("testTemplateMethod"))
@@ -105,6 +140,9 @@ suite.add(TestCaseTest("testResult"))
 suite.add(TestCaseTest("testFailedResultFormatting"))
 suite.add(TestCaseTest("testFailedResult"))
 suite.add(TestCaseTest("testSuite"))
+suite.add(TestCaseTest("testInvokeTearDownAfterTestFail"))
+suite.add(TestCaseTest("testFailedInSetup"))
+
 result = TestResult()
 suite.run(result)
 print(result.summary())
